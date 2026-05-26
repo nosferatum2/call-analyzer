@@ -127,7 +127,7 @@ class Transcriber:
         return str(processed_path)
 
     @staticmethod
-    def _probe_duration(self, audio_path: str) -> float:
+    def _probe_duration(audio_path: str) -> float:
         command = [
             "ffprobe",
             "-v",
