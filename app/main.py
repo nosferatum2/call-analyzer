@@ -32,11 +32,13 @@ def main():
             )
 
             analysis = analyzer.analyze(
-                transcript
+                transcript,
+                file["name"]
             )
 
-            sheets.append_result(
+            sheets.update_result(
                 file["name"],
+                transcript,
                 analysis
             )
 

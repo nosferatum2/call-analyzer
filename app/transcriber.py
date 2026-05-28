@@ -18,10 +18,10 @@ LANGUAGE_PROMPTS = {
 
 class Transcriber:
     def __init__(
-        self,
-        model_name=WHISPER_MODEL,
-        languages=SUPPORTED_LANGUAGES,
-        vad_min_seconds=WHISPER_VAD_MIN_SECONDS,
+            self,
+            model_name=WHISPER_MODEL,
+            languages=SUPPORTED_LANGUAGES,
+            vad_min_seconds=WHISPER_VAD_MIN_SECONDS,
     ):
         if shutil.which("ffmpeg") is None:
             raise RuntimeError(
@@ -37,6 +37,14 @@ class Transcriber:
         self.model = whisper.load_model(model_name)
 
     def transcribe(self, audio_path: str):
+        transcript_path = self._transcript_path(audio_path)
+        cached_text = self._read_cached_transcript(
+            transcript_path
+        )
+
+        if cached_text is not None:
+            return cached_text, str(transcript_path)
+
         prepared_audio_path = self._prepare_audio_path(audio_path)
         language = self._detect_language(prepared_audio_path)
 
@@ -51,10 +59,6 @@ class Transcriber:
 
         text = result["text"]
 
-        transcript_path = (
-            Path("data/transcripts") /
-            f"{Path(audio_path).stem}.txt"
-        )
         transcript_path.parent.mkdir(
             parents=True,
             exist_ok=True
@@ -66,6 +70,22 @@ class Transcriber:
         )
 
         return text, str(transcript_path)
+
+    @staticmethod
+    def _transcript_path(audio_path: str) -> Path:
+        return (
+                Path("data/transcripts") /
+                f"{Path(audio_path).stem}.txt"
+        )
+
+    @staticmethod
+    def _read_cached_transcript(transcript_path: Path) -> str | None:
+        if transcript_path.exists():
+            return transcript_path.read_text(
+                encoding="utf-8"
+            )
+
+        return None
 
     def _detect_language(self, audio_path: str) -> str:
         audio = whisper.load_audio(audio_path)
