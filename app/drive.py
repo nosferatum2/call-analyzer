@@ -67,12 +67,14 @@ class GoogleDriveClient:
         return files
 
     def download_file(self, file_id, filename):
-        request = self.service.files().get_media(fileId=file_id)
-
         output_dir = Path("data/audio")
         output_dir.mkdir(parents=True, exist_ok=True)
         path = output_dir / Path(filename).name
 
+        if path.is_file():
+            return str(path)
+
+        request = self.service.files().get_media(fileId=file_id)
         fh = io.FileIO(path, "wb")
         downloader = MediaIoBaseDownload(fh, request)
 

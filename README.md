@@ -17,6 +17,10 @@ Pipeline:
 ## Project structure
 
 ```text
+README.md
+pyproject.toml
+uv.lock
+.env.example
 app/
   analyzer.py      # Sends transcripts to Ollama and computes total_score
   config.py        # Loads environment variables and resolves credentials path
@@ -28,11 +32,14 @@ app/
 scripts/
   list_drive_files.py
 tests/
+  conftest.py
   test_analyzer.py
   test_config.py
   test_drive.py
+  test_sheets.py
   test_transcriber.py
 data/
+  analysis/
   audio/
   processed_audio/
   transcripts/
@@ -66,20 +73,26 @@ If you are not using `uv`, install the dependencies declared in `pyproject.toml`
 Create `.env` in the project root.
 
 ```env
+ANALYZER_URL=http://localhost:11434/api/generate
 GOOGLE_DRIVE_FOLDER_ID=your_drive_folder_id
 GOOGLE_SHEET_ID=your_google_sheet_id
 GOOGLE_CREDS_FILE=credentials/service-account.json
 OLLAMA_MODEL=qwen2.5:7b
+OLLAMA_TIMEOUT=900
+OLLAMA_RETRIES=1
 WHISPER_MODEL=base
 WHISPER_VAD_MIN_SECONDS=120
 ```
 
 ### Environment variables
 
+- `ANALYZER_URL`: Ollama generate endpoint used for transcript analysis.
 - `GOOGLE_DRIVE_FOLDER_ID`: Root Drive folder that contains call recordings.
 - `GOOGLE_SHEET_ID`: Target Google Sheet ID.
 - `GOOGLE_CREDS_FILE`: Path to the Google service account credentials file.
 - `OLLAMA_MODEL`: Ollama model name used for transcript analysis.
+- `OLLAMA_TIMEOUT`: Request timeout in seconds for analysis calls.
+- `OLLAMA_RETRIES`: Number of times to retry analysis on timeout.
 - `WHISPER_MODEL`: Whisper model name used for transcription.
 - `WHISPER_VAD_MIN_SECONDS`: Calls longer than this are preprocessed with silence removal.
 
@@ -121,7 +134,8 @@ uv run python scripts/list_drive_files.py
 - Downloaded audio: `data/audio/`
 - Preprocessed audio: `data/processed_audio/`
 - Saved transcripts: `data/transcripts/`
-- Analysis rows: appended to the configured Google Sheet
+- Analysis payloads: written back into the matching Google Sheet row
+- Bad calls: highlighted red in the Google Sheet
 
 The analyzer expects JSON from Ollama with these fields:
 
@@ -154,17 +168,27 @@ The analyzer expects JSON from Ollama with these fields:
 
 ## Testing
 
-Run tests with:
+Run the full test suite from the repository root:
 
 ```bash
 uv run pytest
 ```
+
+Run a focused subset when iterating on one area:
+
+```bash
+uv run pytest tests/test_sheets.py
+uv run pytest tests/test_analyzer.py
+```
+
+If you are not using `uv`, activate your environment first and run `pytest` from the repo root so local imports resolve correctly.
 
 Current tests cover:
 
 - analyzer scoring
 - credentials path resolution
 - Drive recursion and filename sanitization
+- Google Sheets row lookup, write-back, and bad-call highlighting
 - transcript persistence
 - ffmpeg presence checks
 - long-audio preprocessing
@@ -176,7 +200,7 @@ Current tests cover:
 - Drive traversal is recursive.
 - The transcriber is currently configured to return Ukrainian (`uk`) as the supported transcription language.
 - Long-call preprocessing depends on local `ffmpeg` and `ffprobe`.
-- Ollama analysis is done against a local HTTP endpoint and is not retried on failure.
+- Ollama analysis is done against a local HTTP endpoint and retries timeout failures.
 
 ## Main entry points
 

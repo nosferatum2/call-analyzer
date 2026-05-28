@@ -7,7 +7,13 @@ load_dotenv()
 
 GOOGLE_DRIVE_FOLDER_ID = os.getenv("GOOGLE_DRIVE_FOLDER_ID")
 GOOGLE_SHEET_ID = os.getenv("GOOGLE_SHEET_ID")
+ANALYZER_URL = os.getenv(
+    "ANALYZER_URL",
+    "http://localhost:11434/api/generate",
+)
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "qwen2.5:7b")
+OLLAMA_TIMEOUT = int(os.getenv("OLLAMA_TIMEOUT", "900"))
+OLLAMA_RETRIES = int(os.getenv("OLLAMA_RETRIES", "1"))
 WHISPER_MODEL = os.getenv("WHISPER_MODEL", "base")
 WHISPER_VAD_MIN_SECONDS = int(
     os.getenv("WHISPER_VAD_MIN_SECONDS", "120")
